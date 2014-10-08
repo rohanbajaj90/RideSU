@@ -19,6 +19,9 @@
 
 @implementation signInPage
 
+
+NSString *userIdSave;
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -65,33 +68,59 @@
 
 - (IBAction)loginButton:(id)sender {
     
+    NSUserDefaults * standardUserDefaults = [NSUserDefaults standardUserDefaults];
+    [standardUserDefaults setObject:_loginIdField.text forKey:@"currentUser"];
+    [standardUserDefaults synchronize];
+
+
+    
     if (_loginIdField.text.length==0 || _passwordField.text.length == 0) {
-        CustomIOS7AlertView *alertView = [[CustomIOS7AlertView alloc] init];
+//        CustomIOS7AlertView *alertView = [[CustomIOS7AlertView alloc] init];
+//        
+//        // Add some custom content to the alert view
+//        [alertView setContainerView:[self createDemoView]];
+//        
+//        // Modify the parameters
+//        [alertView setButtonTitles:[NSMutableArray arrayWithObjects:@"Close1", @"Close2", @"Close3", nil]];
+//        [alertView setDelegate:self];
+//        
+//        // You may use a Block, rather than a delegate.
+//        [alertView setOnButtonTouchUpInside:^(CustomIOS7AlertView *alertView, int buttonIndex) {
+//            NSLog(@"Block: Button at position %d is clicked on alertView %d.", buttonIndex, [alertView tag]);
+//            [alertView close];
+//        }];
+//        
+//        [alertView setUseMotionEffects:true];
+//        
+//        // And launch the dialog
+//        [alertView show];
         
-        // Add some custom content to the alert view
-        [alertView setContainerView:[self createDemoView]];
         
-        // Modify the parameters
-        [alertView setButtonTitles:[NSMutableArray arrayWithObjects:@"Close1", @"Close2", @"Close3", nil]];
-        [alertView setDelegate:self];
         
-        // You may use a Block, rather than a delegate.
-        [alertView setOnButtonTouchUpInside:^(CustomIOS7AlertView *alertView, int buttonIndex) {
-            NSLog(@"Block: Button at position %d is clicked on alertView %d.", buttonIndex, [alertView tag]);
-            [alertView close];
-        }];
+        ALAlertBanner *banner = [ALAlertBanner alertBannerForView:self.view
+                                                            style:ALAlertBannerStyleFailure
+                                                         position:ALAlertBannerPositionTop
+                                                            title:@"id..password?"
+                                                         subtitle:@""];
         
-        [alertView setUseMotionEffects:true];
+        /*
+         optionally customize banner properties here...
+         */
         
-        // And launch the dialog
-        [alertView show];
+        _secondsToShow = 5.0;
+        
+        
+        [banner show];
 
     }
     else{
     
         PFQuery *query = [PFQuery queryWithClassName:@"User"]; //1
         [query whereKey:@"userID" equalTo:_loginIdField.text];//2
+        userIdSave = _loginIdField.text;
         [query whereKey:@"password" equalTo:_passwordField.text];//2
+        
+        
         
         MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
         hud.mode = MBProgressHUDModeIndeterminate;
@@ -111,7 +140,7 @@
                                                                         style:ALAlertBannerStyleFailure
                                                                      position:ALAlertBannerPositionTop
                                                                         title:@"oops!"
-                                                                     subtitle:@"no such combo"];
+                                                                     subtitle:@"no such credentials"];
                     
                     /* 
                      optionally customize banner properties here...
@@ -133,10 +162,7 @@
                 else{
                 NSLog(@"Successfully retrieved: %@", objects);
                     
-                    
-                    
-                                               
-                    
+                   
                     [_loginIdField resignFirstResponder];
                     [_passwordField resignFirstResponder];
                     
@@ -155,13 +181,126 @@
                     
                     [banner show];
                     
-//                    for (PFObject *user in objects) {
-//                        NSArray *friends = [user objectForKey:@"friends"];
-//                        
-//                        for (NSString *friend in friends) {
-//                            NSLog(@"Friend is '%@'", friend);
-//                        }
-//                    }
+                    for (PFObject *user in objects) {
+                        
+                        NSLog(@"running for loop");
+                        
+                        NSString *settingCheck = [user objectForKey:@"setPassword"];
+                        NSInteger length = settingCheck.length;
+                       // NSLog(@"length %ld",(long)lenth);
+                       // NSLog(@"string %@",settingCheck);
+                        
+                        
+                        if (length == 0 ) {
+                                NSLog(@"not set yet");
+                            
+                            NSUserDefaults * standardUserDefaults = [NSUserDefaults standardUserDefaults];
+                            [standardUserDefaults setObject:userIdSave forKey:@"currentUserId"];
+                            [standardUserDefaults synchronize];
+
+
+                            
+                            //  take to first time password set page
+                            
+                            
+                            NSString * storyboardName = @"Main";
+                            UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+                            UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"setPasswordFirstTime"];
+                            [self presentViewController:vc animated:YES completion:nil];
+                            
+                            
+                            
+                            
+                            
+                            
+                            }else
+                            {
+                                NSLog(@"already set");
+                                
+                                NSLog(@"check if Number of posts is nill");
+                                
+                                NSNumber * numberOfPosts = [user objectForKey:@"TotalPosts"];
+                                NSLog(@" number of posts : %@",numberOfPosts);
+                                
+                    
+
+                                if (numberOfPosts == nil){
+                                    NSLog(@" it is null, change to 0");
+                                    
+                                    
+                                            
+                                            PFQuery *query2 = [PFQuery queryWithClassName:@"User"];
+                                            [query2 whereKey:@"userID" equalTo:userIdSave];
+                                    
+                                    
+                                    MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
+                                    hud.mode = MBProgressHUDModeIndeterminate;
+                                    hud.labelText = @"First Time Initialization";
+                                    [hud show:YES];
+
+                                            [query2 getFirstObjectInBackgroundWithBlock:^(PFObject * userStats, NSError *error) {
+                                                [hud hide:YES];
+
+                                                
+                                                if (!error) {
+                                                    // Found UserStats
+                                                    [userStats setObject:[NSNumber numberWithInt:0] forKey:@"TotalPosts"];
+
+                                                    
+                                                    // Save
+                                                    [userStats saveInBackground];
+                                                    
+                                                    NSString * storyboardName = @"Main";
+                                                    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+                                                    UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"mainMenu"];
+                                                    [self presentViewController:vc animated:YES completion:nil];
+                                                    
+                                                } else {
+                                                    // Did not find any UserStats for the current user
+                                                    NSLog(@"Error: %@", error);
+                                                    
+                                                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
+                                                                                                    message:@"User record couldn't be updated"
+                                                                                                   delegate:self
+                                                                                          cancelButtonTitle:@"OK"
+                                                                                          otherButtonTitles:nil];
+                                                    [alert show];
+                                                    
+                                                    NSString * storyboardName = @"Main";
+                                                    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+                                                    UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"signInPage"];
+                                                    [self presentViewController:vc animated:YES completion:nil];
+                                                    
+                                                }
+                                            }];
+                                    
+                                }
+                                
+                                            
+                                
+                                
+                                else{
+                                
+                                    NSLog(@"is not null");
+                                    
+                                    NSString * storyboardName = @"Main";
+                                    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+                                    UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"mainMenu"];
+                                    [self presentViewController:vc animated:YES completion:nil];
+
+                                
+                                }
+
+                                
+                                
+                                
+                                //  take to home page
+                                
+                                
+
+                            }
+                        
+                    }
 
 
                     
@@ -171,6 +310,15 @@
             } else {
                 NSString *errorString = [[error userInfo] objectForKey:@"error"];
                 NSLog(@"Error: %@", errorString);
+                
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Network Error"
+                                                                message:@"Try again"
+                                                               delegate:self
+                                                      cancelButtonTitle:@"OK"
+                                                      otherButtonTitles:nil];
+                [alert show];
+                
+                
             }
         }];
     
@@ -221,6 +369,8 @@
     UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
     UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"requestPassword"];
     [self presentViewController:vc animated:YES completion:nil];
+    
+    
    
 }
 @end

@@ -83,11 +83,25 @@
             if (succeeded){
                 NSLog(@"Object Uploaded!");
                 [_emailIdField resignFirstResponder];
+                
+                
+                NSString * storyboardName = @"Main";
+                UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+                UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"afterRequestPassword"];
+                [self presentViewController:vc animated:YES completion:nil];
 
             }
             else{
                 NSString *errorString = [[error userInfo] objectForKey:@"error"];
                 NSLog(@"Error: %@", errorString);
+                
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
+                                                                message:@"Try later"
+                                                               delegate:self
+                                                      cancelButtonTitle:@"OK"
+                                                      otherButtonTitles:nil];
+                [alert show];
+                
             }
             
         }];
@@ -122,6 +136,15 @@
     
    
 
+    
+}
+
+- (IBAction)backButton:(id)sender {
+    
+    NSString * storyboardName = @"Main";
+    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:storyboardName bundle: nil];
+    UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:@"signInPage"];
+    [self presentViewController:vc animated:YES completion:nil];
     
 }
 
